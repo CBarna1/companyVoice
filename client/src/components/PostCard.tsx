@@ -19,7 +19,6 @@ interface Props {
 }
 
 export const PostCard: React.FC<Props> = ({
-  _id,
   author,
   type,
   title,
