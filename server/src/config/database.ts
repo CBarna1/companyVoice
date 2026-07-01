@@ -5,10 +5,10 @@ dotenv.config();
 
 let sequelize: Sequelize;
 
-// Support both DATABASE_URL (for Vercel/cloud) and individual env vars (for local dev)
+// Support both DATABASE_URL (for Vercel Postgres) and individual env vars (for local MySQL dev)
 if (process.env.DATABASE_URL) {
   sequelize = new Sequelize(process.env.DATABASE_URL, {
-    dialect: 'mysql',
+    dialect: 'postgres',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     pool: {
       max: 5,

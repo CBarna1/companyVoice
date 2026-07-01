@@ -1,151 +1,235 @@
 # Vercel Deployment Guide
 
-This guide will help you deploy CompanyVoice to Vercel with a MySQL database on PlanetScale.
+This guide will help you deploy CompanyVoice to Vercel with Vercel Postgres (free tier).
 
 ## Prerequisites
 
 - Vercel account (https://vercel.com)
-- PlanetScale account (https://planetscale.com)
 - GitHub account (to push your repository)
 - Git installed locally
 
-## Step 1: Set Up GitHub Repository
+## Step 1: Ensure GitHub Repository
 
-1. Go to https://github.com/new and create a new repository named `companyvoice`
-2. In your project directory, add the remote:
-   ```bash
-   git remote add origin https://github.com/YOUR_USERNAME/companyvoice.git
-   git branch -M main
-   git push -u origin main
-   ```
+If you haven't already pushed your code:
+```bash
+git remote add origin https://github.com/YOUR_USERNAME/companyvoice.git
+git branch -M main
+git push -u origin main
+```
 
-## Step 2: Set Up PlanetScale Database
-
-1. Go to https://planetscale.com and sign up/log in
-2. Click "Create new database" → Name it `companyvoice`
-3. Choose the region closest to you
-4. Click "Create database"
-5. Once created, go to "Integrations" and copy your MySQL connection string
-6. It should look like: `mysql://user:password@host/db`
-
-## Step 3: Set Up Vercel Deployment
+## Step 2: Deploy to Vercel
 
 1. Go to https://vercel.com and click "New Project"
 2. Select "Import Git Repository" and choose your `companyvoice` repo
 3. **Framework**: Select "Other" (we have a custom setup)
-4. **Root Directory**: Leave empty (it's the project root)
+4. **Root Directory**: Leave empty (project root)
 5. Click "Deploy"
+
+Vercel will now build your project. This may take 2-5 minutes.
+
+## Step 3: Set Up Vercel Postgres
+
+After initial deployment completes:
+
+1. In your Vercel project dashboard, go to the **Storage** tab
+2. Click "Create New" → "Postgres"
+3. Name it `companyvoice` 
+4. Choose region closest to you
+5. Click "Create"
+
+Vercel will automatically add a `POSTGRES_PRISMA_URL` environment variable (and others) to your project.
 
 ## Step 4: Configure Environment Variables
 
-After Vercel creates the project:
-
 1. Go to **Settings** → **Environment Variables**
-2. Add these variables:
+2. Add these variables (some may already exist from Postgres setup):
 
    ```
-   DATABASE_URL = mysql://user:password@host/db
+   DATABASE_URL = [AUTO-FILLED from Postgres setup]
    VITE_API_BASE_URL = https://YOUR_PROJECT.vercel.app
-   JWT_SECRET = (generate a random string, e.g., openssl rand -base64 32)
-   JWT_REFRESH_SECRET = (generate another random string)
+   JWT_SECRET = [generate: openssl rand -base64 32]
+   JWT_REFRESH_SECRET = [generate: openssl rand -base64 32]
    NODE_ENV = production
    ```
 
 3. Click "Save"
 
-## Step 5: Deploy
+**To generate secrets:**
+```bash
+# On Windows PowerShell:
+[Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+
+# Or on Mac/Linux:
+openssl rand -base64 32
+```
+
+## Step 5: Deploy with Database
 
 1. Go to **Deployments** tab
-2. Click "Redeploy" on the latest deployment, or
-3. Push a new commit to trigger automatic deployment:
-   ```bash
-   git add .
-   git commit -m "Configure for Vercel deployment"
-   git push
-   ```
+2. Click "Redeploy" on your latest deployment (to apply new env vars)
 
-## Step 6: Initialize Database
+Or push a new commit:
+```bash
+git add .
+git commit -m "Configure Vercel Postgres"
+git push
+```
 
-After first deployment:
+## Step 6: Initialize Database Schema
 
-1. Use PlanetScale console to run the database schema:
-   - Go to your PlanetScale database
-   - Click "Console"
-   - Paste contents of `DATABASE_SCHEMA.sql` and run
+After deployment completes, run the database initialization:
 
-2. Or seed via API endpoint:
-   - Make a POST request to `/api/admin/seed` with admin auth
-   - (This endpoint should be restricted in production)
+**Option A: Using curl**
+```bash
+curl -X POST https://YOUR_PROJECT.vercel.app/api/admin/init-db \
+  -H "Content-Type: application/json" \
+  -d '{"adminPassword":"AdminPassword123"}'
+```
 
-## Verification
+**Option B: Using an admin endpoint** (if you have one set up)
+
+This creates all tables and seeds initial data.
+
+## Step 7: Test Your Deployment
 
 1. Visit `https://YOUR_PROJECT.vercel.app/`
-2. Check the frontend loads
+2. You should see the CompanyVoice login page
 3. Test login with demo credentials:
-   - Admin: admin@companyvoice.com / AdminPassword123
-   - Employee: john@company.com / Pass123456
+   - Admin: `admin@companyvoice.com` / `AdminPassword123`
+   - Employee: `john@company.com` / `Pass123456`
+
+(These are created during database initialization)
 
 ## Troubleshooting
 
 ### Database Connection Issues
-- Verify `DATABASE_URL` is correct in Vercel env vars
-- Check PlanetScale IP whitelist allows Vercel IPs (usually automatic)
-- Test connection locally first with the same URL
+- Verify `DATABASE_URL` is set in Vercel env vars
+- Check Vercel Postgres status in Storage tab
+- Redeploy after setting DATABASE_URL
 
 ### CORS Errors
-- Ensure `VITE_API_BASE_URL` matches your Vercel domain
-- Frontend API calls should use `/api/*` (relative) or the env var
+- Ensure `VITE_API_BASE_URL` in env vars matches your Vercel domain
+- Frontend should use relative paths `/api/*` automatically
 
 ### Cold Start Issues
 - First request may take 10-15 seconds (normal for serverless)
+- Subsequent requests are faster
 - Database connections are pooled automatically
 
-### API Not Found Errors
-- Verify `api/index.ts` exists at project root
-- Check Vercel build logs for errors
-- Ensure all dependencies are in `server/package.json`
+### Deployment Failed
+1. Check build logs in Vercel dashboard
+2. Ensure all dependencies are listed in `server/package.json`
+3. Verify `api/index.ts` exists at project root
+4. Try redeploying: Dashboard → Deployments → Redeploy
+
+## Local Development Setup
+
+For local development with MySQL:
+
+```bash
+# Install dependencies
+npm install
+npm --prefix server install
+npm --prefix client install
+
+# Create local MySQL database
+mysql -u root -p -e "CREATE DATABASE companyvoice;"
+
+# Start development servers
+npm run dev
+```
+
+**Frontend**: http://localhost:5173  
+**Backend**: http://localhost:5000
 
 ## Post-Deployment
-
-### Update Frontend API URL
-The frontend should use relative paths (`/api/*`) which automatically work with the Vercel deployment.
-
-If using environment variables:
-- Local: `VITE_API_BASE_URL=http://localhost:5000`
-- Production: Set in Vercel env vars
 
 ### Database Migrations
 For schema changes in production:
 1. Update models in `server/src/models/index.ts`
-2. Get a PlanetScale admin connection
-3. Run migrations or use the PlanetScale console
+2. Deploy to Vercel (Sequelize auto-syncs on startup)
+3. Monitor deployment logs for sync status
 
-### Monitoring
-- View logs: **Deployments** → Click deployment → **Functions**
-- Set up error tracking with Sentry (optional)
+### Viewing Logs
+- In Vercel: **Deployments** → Click deployment → **Functions**
+- Check browser console for frontend errors
+- Use Vercel Analytics for performance monitoring
+
+### Backup & Recovery
+Vercel Postgres includes automatic backups. To restore:
+1. Go to your Postgres database in Storage tab
+2. Look for backup/recovery options
+3. Contact Vercel support if needed
 
 ## Optional: Custom Domain
 
-1. Go to **Settings** → **Domains**
+1. In Vercel project, go to **Settings** → **Domains**
 2. Add your custom domain
-3. Update DNS records as shown
-4. Update `VITE_API_BASE_URL` in env vars if needed
+3. Follow DNS configuration shown
+4. Update `VITE_API_BASE_URL` if using custom domain
 
-## Scaling Considerations
+## Database Comparison
 
-- **Database**: PlanetScale auto-scales
-- **API**: Vercel handles scale automatically
-- **Frontend**: Served from CDN automatically
-- **Costs**: Generally free tier for hobby projects; check pricing
+| Feature | Local MySQL | Vercel Postgres |
+|---------|-----------|-----------------|
+| Cost | Free | Free (tier) |
+| Setup | Manual | Automatic |
+| Maintenance | You manage | Managed by Vercel |
+| Backups | Manual | Automatic |
+| Performance | Local only | Global CDN + DB |
+
+## Scaling
+
+- **Free Tier**: 10 connections, suitable for development
+- **Paid Tier**: Unlimited connections, auto-scaling
+- Both tiers included with Vercel Pro
+
+For production traffic, consider upgrading to Vercel Pro or Postgres Pro.
+
+## Environment Variables Reference
+
+```env
+# Auto-generated by Vercel Postgres
+DATABASE_URL=postgres://user:password@host:5432/db
+
+# Manual configuration
+VITE_API_BASE_URL=https://YOUR_PROJECT.vercel.app
+JWT_SECRET=<random 32-byte string>
+JWT_REFRESH_SECRET=<random 32-byte string>
+NODE_ENV=production
+```
+
+## Common Commands
+
+```bash
+# Deploy current branch
+git push
+
+# Check deployment status
+vercel --prod
+
+# View live logs
+vercel logs
+
+# Roll back to previous deployment
+# (available in Vercel dashboard)
+```
+
+## Getting Help
+
+- Vercel Docs: https://vercel.com/docs
+- Vercel Postgres Docs: https://vercel.com/docs/storage/postgres
+- Sequelize Docs: https://sequelize.org/
+- GitHub Issues: https://github.com/YOUR_USERNAME/companyvoice/issues
 
 ## Next Steps
 
-- Set up GitHub Actions for automated tests
-- Add error monitoring (Sentry, LogRocket)
-- Configure database backups
-- Set up custom email provider for notifications
-- Monitor analytics and performance
-
-For questions or issues, check:
-- Vercel docs: https://vercel.com/docs
-- PlanetScale docs: https://docs.planetscale.com
+After successful deployment:
+1. [ ] Create admin account and verify login
+2. [ ] Set up custom domain (optional)
+3. [ ] Configure error monitoring (Sentry, LogRocket)
+4. [ ] Enable Vercel Analytics
+5. [ ] Set up GitHub branch protection
+6. [ ] Create staging deployment with preview
+7. [ ] Configure email notifications
+8. [ ] Monitor performance metrics
