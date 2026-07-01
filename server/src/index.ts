@@ -22,9 +22,15 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// CORS configuration
+const corsOrigin = process.env.NODE_ENV === 'production' 
+  ? process.env.VITE_API_BASE_URL || 'https://companyvoice.vercel.app'
+  : 'http://localhost:5173';
+
 app.use(
   cors({
-    origin: process.env.NODE_ENV === 'production' ? process.env.VITE_API_BASE_URL : 'http://localhost:5173',
+    origin: corsOrigin,
     credentials: true,
   })
 );
@@ -48,7 +54,7 @@ app.get('/api/health', (req, res) => {
 // Error handler
 app.use(errorHandler);
 
-// Database sync and server start
+// Database sync and server start (only for local development)
 const startServer = async () => {
   try {
     await sequelize.authenticate();
@@ -66,6 +72,9 @@ const startServer = async () => {
   }
 };
 
-startServer();
+// Only start server if running locally (not in Vercel environment)
+if (process.env.VERCEL !== '1') {
+  startServer();
+}
 
 export default app;
