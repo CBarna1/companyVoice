@@ -1,5 +1,4 @@
 import React from 'react';
-import { useAuth } from '../services/authContext';
 import { getTierColor } from '../utils/tierUtils';
 
 interface Props {

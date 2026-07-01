@@ -6,7 +6,7 @@ import { BarChart3, Settings, Download } from 'lucide-react';
 export const AdminPage: React.FC = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState<any>(null);
-  const [settings, setSettings] = useState<any>({});
+  const [_settings, setSettings] = useState<any>({});
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

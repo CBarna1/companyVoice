@@ -7,7 +7,7 @@ import { ArrowRight } from 'lucide-react';
 
 export const SubmitPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const [type, setType] = useState<'challenge' | 'solution' | 'both'>('challenge');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
