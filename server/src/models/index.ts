@@ -26,6 +26,13 @@ export class Post extends Model {
   declare xp_awarded: number;
   declare created_at: Date;
   declare updated_at: Date;
+  // Associations
+  declare user?: User;
+  declare tags?: PostTag[];
+  declare comments?: Comment[];
+  declare postVotes?: Vote[];
+  declare solutions?: SolutionLink[];
+  declare solvedChallenges?: SolutionLink[];
 }
 
 export class PostTag extends Model {

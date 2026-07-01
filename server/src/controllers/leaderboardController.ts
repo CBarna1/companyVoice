@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { QueryTypes } from 'sequelize';
 import { User, Post } from '../models';
 import { AuthRequest } from '../middleware/auth';
 import sequelize from '../config/database';
@@ -43,7 +44,7 @@ export const getTopSolvers = async (req: AuthRequest, res: Response) => {
       LIMIT :limit
     `, {
       replacements: { limit: Number(limit) },
-      type: sequelize.QueryTypes.SELECT,
+      type: QueryTypes.SELECT,
     });
 
     const formattedSolvers = (topSolvers as any[]).map((user: any, index: number) => ({
