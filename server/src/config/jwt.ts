@@ -5,8 +5,8 @@ dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key_change_this_in_production';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your_super_secret_refresh_key_change_this_in_production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
-const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+const JWT_EXPIRES_IN: string | number = process.env.JWT_EXPIRES_IN || '15m';
+const JWT_REFRESH_EXPIRES_IN: string | number = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 
 export interface TokenPayload {
   id: number;
@@ -15,12 +15,12 @@ export interface TokenPayload {
 }
 
 export const generateAccessToken = (user: TokenPayload): string => {
-  const options: SignOptions = { expiresIn: JWT_EXPIRES_IN };
+  const options: SignOptions = { expiresIn: JWT_EXPIRES_IN as string | number };
   return jwt.sign(user, JWT_SECRET, options);
 };
 
 export const generateRefreshToken = (user: TokenPayload): string => {
-  const options: SignOptions = { expiresIn: JWT_REFRESH_EXPIRES_IN };
+  const options: SignOptions = { expiresIn: JWT_REFRESH_EXPIRES_IN as string | number };
   return jwt.sign(user, JWT_REFRESH_SECRET, options);
 };
 

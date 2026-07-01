@@ -1,5 +1,5 @@
 import { Post, User, Vote, Comment, SolutionLink } from '../models';
-import { json2csv } from 'json2csv';
+import { Parser } from 'json2csv';
 
 interface PostRecord {
   id: number;
@@ -29,7 +29,7 @@ export const exportPostsToCSV = async (): Promise<string> => {
 
   for (const post of posts) {
     const commentCount = await Comment.count({ where: { post_id: post.id } });
-    const author = post.user_id ? ((post.User as any)?.name || 'N/A') : 'Anonymous';
+    const author = post.user_id ? ((post.user as any)?.name || 'N/A') : 'Anonymous';
 
     records.push({
       id: post.id,
@@ -47,7 +47,8 @@ export const exportPostsToCSV = async (): Promise<string> => {
   }
 
   try {
-    const csv = json2csv({ data: records });
+    const parser = new Parser<PostRecord>();
+    const csv = parser.parse(records);
     return csv;
   } catch (error) {
     throw new Error('Failed to generate CSV');
